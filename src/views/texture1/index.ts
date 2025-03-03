@@ -9,38 +9,46 @@ export class TextureWebglViewer extends WebglViewer {
 
   initVertex() {
     return glsl`
-        attribute vec4 aPosition;
-        attribute vec4 aTex;
-        varying vec2 vTex;
-        void main() {
+      attribute vec4 aPosition;
+      attribute vec4 aTex;
+      varying vec2 vTex;
+      void main() {
         gl_Position = aPosition; // vec4(0.0,0.0,0.0,1.0)
         vTex = vec2(aTex.x, aTex.y);
-        }
+      }
     `
   }
 
   initFragment() {
     return glsl`
-        precision lowp float;
-        uniform sampler2D uSampler;
-        varying vec2 vTex;
-        void main() {
-            gl_FragColor = texture2D(uSampler, vTex);
-        }
+      precision lowp float;
+      uniform sampler2D uSampler;
+      varying vec2 vTex;
+      void main() {
+        gl_FragColor = texture2D(uSampler, vTex);
+      }
     `
   }
 
   init() {
     super.init()
     const gl = this.gl
+    if (!gl) throw Error('gl is null')
     const program = this.program
+    if (!program) throw Error('program is null')
     gl.useProgram(program)
     const aPosition = gl.getAttribLocation(program, 'aPosition')
     const aTex = gl.getAttribLocation(program, 'aTex')
     const uSampler = gl.getUniformLocation(program, 'uSampler')
 
+    // prettier-ignore
+    // 顶点数据数组，每4个数字表示一个顶点：
     const points = new Float32Array([
-      -0.5, 0.5, 0.0, 1.0, -0.5, -0.5, 0.0, 0.0, 0.5, 0.5, 1.0, 1.0, 0.5, -0.5, 1.0, 0.0,
+      // 位置坐标(x,y)   纹理坐标(u,v)
+      -0.5,  0.5,        0.0, 1.0,  // 左上角
+      -0.5, -0.5,        0.0, 0.0,  // 左下角
+       0.5,  0.5,        1.0, 1.0,  // 右上角 
+       0.5, -0.5,        1.0, 0.0,  // 右下角
     ])
 
     const buffer = gl.createBuffer()
@@ -56,6 +64,9 @@ export class TextureWebglViewer extends WebglViewer {
     img.onload = function () {
       const texture = gl.createTexture() // 创建纹理对象
       // gl.deletTexture(textrue); // 删除纹理对象的方式
+
+      // 图像坐标转纹理坐标 需要进行 Y 轴翻转
+      // LINK ./index.md:68
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1) // 翻转 图片 Y轴
       gl.activeTexture(gl.TEXTURE0) // 激活0号纹理单元 Webgl 是通过纹理单元来管理纹理对象,每个纹理单元管理⼀张纹理图像
 
@@ -112,6 +123,21 @@ export class TextureWebglViewer extends WebglViewer {
        */
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img)
       gl.uniform1i(uSampler, 0)
+
+      /**
+       * 三角形带工作原理：
+       * 0_______2
+       * |      /|
+       * |    /  |
+       * |  /    |
+       * |/______|
+       * 1       3
+       * 第一个三角形：顶点0-1-2（左上-左下-右上）
+       * 第二个三角形：顶点1-3-2（左下-右下-右上）
+       * 这样就形成了一个完整的矩形，用于显示纹理
+       * 这种方式可以高效地绘制矩形纹理，只需4个顶点就能完成。
+       */
+      // 使用三角形带绘制 从索引0开始，绘制4个顶点
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
     }
   }

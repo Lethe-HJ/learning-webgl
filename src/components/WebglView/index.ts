@@ -1,8 +1,8 @@
 export class WebglViewer {
-  private vertex: string
-  private fragment: string
-  protected gl: WebGLRenderingContext
-  protected program: WebGLProgram
+  private vertex: string = ''
+  private fragment: string = ''
+  protected gl: WebGLRenderingContext | null = null
+  protected program: WebGLProgram | null = null
 
   constructor(public canvas: HTMLCanvasElement) {}
 
@@ -22,11 +22,13 @@ export class WebglViewer {
 
   init() {
     const gl = this.canvas.getContext('webgl')
+    if (!gl) throw Error('gl is null')
     this.gl = gl
     const vertexShader = gl.createShader(gl.VERTEX_SHADER)
     const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER)
     this.vertex = this.initVertex()
     this.fragment = this.initFragment()
+    if (!vertexShader || !fragmentShader) throw Error('vertexShader or fragmentShader is null')
     gl.shaderSource(vertexShader, this.vertex) // 指定顶点着色器的源码
     gl.shaderSource(fragmentShader, this.fragment) // 指定片元着色器的源码
 

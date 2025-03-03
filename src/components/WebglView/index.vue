@@ -4,7 +4,7 @@
   </canvas>
 </template>
 <script setup lang="ts">
-import { ref, onMounted, PropType } from 'vue'
+import { ref, onMounted, type PropType } from 'vue'
 import { WebglViewer } from '.'
 
 const props = defineProps({
@@ -17,6 +17,6 @@ const props = defineProps({
 const canvas = ref<HTMLCanvasElement>()
 
 onMounted(() => {
-  props.viewer(canvas.value)
+  props.viewer(canvas.value!)
 })
 </script>
